@@ -1,0 +1,39 @@
+version: '3.7'
+
+services:
+  bridge:
+    image: rosbridge
+    tty: true
+    build:
+      context: ./bridge/
+    environment:
+      ROS_SERVICE_HOST: "rosservice"
+      ROS_SERVICE_PORT: 9191 
+      ROS_ROBOT_HOST: "robot"
+      ROS_ROBOT_PORT: 9190
+    command: ["python3", "-u", "main.py"]
+    working_dir: /bridge
+    volumes:
+      - ./bridge:/bridge:z
+
+  rosservice:
+    image: rosmelodic
+    tty: true
+    build:
+      context: ./ros/
+      args:
+        ROS_DISTRO: melodic
+    working_dir: /ros
+    entrypoint: /entrypoint.bash
+    ports:
+      - "9191:9191"
+    command: ["roslaunch", "custom_service", "service.launch", "--screen"]
+
+  robot:
+    image: rosmelodic # reuse from rosservice
+    tty: true
+    working_dir: /ros
+    entrypoint: /entrypoint.bash
+    ports:
+      - "9190:9190"
+    command: ["roslaunch", "my_robot", "robot.launch", "--screen"]

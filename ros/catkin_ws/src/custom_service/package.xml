@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>custom_service</name>
+  <version>1.0.0</version>
+  <description>Simple Service in the cloud.</description>
+
+  <maintainer email="andreas.bresser@dfki.de">Andreas Bresser</maintainer>
+  <author email="andreas.bresser@dfki.de">Andreas Bresser</author>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+  <build_depend>std_msgs</build_depend>
+  <exec_depend>rospy</exec_depend>
+</package>

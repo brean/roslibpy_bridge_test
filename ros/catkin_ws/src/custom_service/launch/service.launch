@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+  <node pkg="custom_service" type="service.py" name="service" output="screen" />
+
+  <!-- websuite-connection -->
+  <include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" > 
+     <arg name="port" value="9191"/>
+  </include>
+</launch>

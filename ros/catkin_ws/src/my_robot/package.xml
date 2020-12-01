@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+<package format="2">
+  <name>my_robot</name>
+  <version>1.0.0</version>
+  <description>Simple robot simulation with just one ROS-node.</description>
+
+  <maintainer email="andreas.bresser@dfki.de">Andreas Bresser</maintainer>
+  <author email="andreas.bresser@dfki.de">Andreas Bresser</author>
+
+  <license>BSD</license>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <build_depend>roslaunch</build_depend>
+
+</package>
