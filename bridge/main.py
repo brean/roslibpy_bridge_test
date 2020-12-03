@@ -14,6 +14,24 @@ SERVICE_FROM_ROBOT = [
 ]
 
 
+class AsyncServiceWorkaround(roslibpy.Service):
+    def _service_response_handler(self, request):
+        response = roslibpy.ServiceResponse()
+        self._service_callback(request, response)
+
+    def after_service_response(self, request, response, success):
+        call = roslibpy.Message({'op': 'service_response',
+                        'service': self.name,
+                        'values': dict(response),
+                        'result': success
+                        })
+
+        if 'id' in request:
+            call['id'] = request['id']
+
+        self.ros.send_on_ready(call)
+
+
 class RosCon:
     def __init__(self, host, port):
         self.host = host
@@ -45,24 +63,6 @@ class RosCon:
                 raise e
         return False
 
-    def create_service(self, name, service_type):
-        logger.info(f'create service {name} for {self.host}:{self.port}')
-        service = roslibpy.Service(self.client, name, service_type)
-        return service
-
-    def get_services_for_type(self, service_type, **kwargs):
-        return self.client.get_services_for_type(service_type, **kwargs)
-
-    def errfunc(self, err):
-        logger.error(f'error occured while calling a service: {err}')
-
-    def call_service(self, service, name, service_type):
-        request = roslibpy.ServiceRequest()
-        logger.info(f'call service {name} on {self.host}:{self.port}')
-        result = service.call(request, errback=self.errfunc)
-        logger.info(f'service response for {name} at '
-            f'{self.host}:{self.port}: {result}')
-        return result
 
 
 def setup_logging(logger):
@@ -74,25 +74,25 @@ def setup_logging(logger):
 
 
 def main():
-    service = RosCon(
+    cloud = RosCon(
         host=os.environ['ROS_SERVICE_HOST'],
-        port=int(os.environ['ROS_SERVICE_PORT']))
+        port=int(os.environ['ROS_SERVICE_PORT'])).client
     robot = RosCon(
         host=os.environ['ROS_ROBOT_HOST'],
-        port=int(os.environ['ROS_ROBOT_PORT']))
+        port=int(os.environ['ROS_ROBOT_PORT'])).client
 
     for name, service_type in SERVICE_FROM_ROBOT:
-        cloud_service = service.create_service(name, service_type)
-        robot_service = robot.create_service(name, service_type)
+        cloud_service = roslibpy.Service(cloud, name, service_type)
+        robot_service = AsyncServiceWorkaround(robot, name, service_type)
+
         def handler(request, response):
-            # forward response from cloud service to robot
-            result = service.call_service(
-                cloud_service, name, service_type).data
-            
-            logger.info(f'Result from service: {result}')
-            for key, value in result.items():
-                response[key] = value
-            return True
+            cloud_request = roslibpy.ServiceRequest()
+            def cloud_cb(result):
+                for key, value in result.items():
+                    response[key] = value
+                robot_service.after_service_response(request, response, True)
+            cloud_service.call(cloud_request, callback=cloud_cb)
+
         robot_service.advertise(handler)
     
     while True:
