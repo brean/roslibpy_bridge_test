@@ -13,23 +13,21 @@ SERVICE_FROM_ROBOT = [
     )
 ]
 
-
 class AsyncServiceWorkaround(roslibpy.Service):
     def _service_response_handler(self, request):
         response = roslibpy.ServiceResponse()
-        self._service_callback(request, response)
+        def done(success):
+            call = roslibpy.Message({'op': 'service_response',
+                            'service': self.name,
+                            'values': dict(response),
+                            'result': success
+                            })
 
-    def after_service_response(self, request, response, success):
-        call = roslibpy.Message({'op': 'service_response',
-                        'service': self.name,
-                        'values': dict(response),
-                        'result': success
-                        })
+            if 'id' in request:
+                call['id'] = request['id']
 
-        if 'id' in request:
-            call['id'] = request['id']
-
-        self.ros.send_on_ready(call)
+            self.ros.send_on_ready(call)
+        self._service_callback(request['args'], response, done)
 
 
 class RosCon:
@@ -85,12 +83,12 @@ def main():
         cloud_service = roslibpy.Service(cloud, name, service_type)
         robot_service = AsyncServiceWorkaround(robot, name, service_type)
 
-        def handler(request, response):
+        def handler(request, response, done):
             cloud_request = roslibpy.ServiceRequest()
             def cloud_cb(result):
                 for key, value in result.items():
                     response[key] = value
-                robot_service.after_service_response(request, response, True)
+                done(True)
             cloud_service.call(cloud_request, callback=cloud_cb)
 
         robot_service.advertise(handler)
