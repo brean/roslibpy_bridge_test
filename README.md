@@ -1,6 +1,7 @@
 # roslibpy_bridge_test
 
-Example project to connect two ros instances using roslibpy.
+Example project to connect two ros instances using roslibpy to advertise and call a service.
+See https://github.com/gramaziokohler/roslibpy/issues/68
 
 This project exists of 3 docker container:
 
